@@ -1,20 +1,31 @@
 #include <iostream>
 #include <stack>
+#include <vector>
 using namespace std;
 
+// Node structure for Expression Tree
 struct Node {
     char data;
     Node *left, *right;
-    Node(char val) : data(val), left(nullptr), right(nullptr) {}
+
+    Node(char val) {
+        data = val;
+        left = right = nullptr;
+    }
 };
 
-// Construct expression tree from prefix expression
-Node* constructTree(const string &prefix) {
+// Function to construct expression tree from prefix expression
+Node* constructTree(string prefix) {
     stack<Node*> st;
+    
     for (int i = prefix.length() - 1; i >= 0; i--) {
-        Node* node = new Node(prefix[i]);
-        if (isalpha(prefix[i])) st.push(node);
-        else {
+        char ch = prefix[i];
+        Node* node = new Node(ch);
+
+        if (isalpha(ch)) {
+            st.push(node); // Push operand
+        } else {
+            // Operator node: Pop two nodes and attach them
             node->left = st.top(); st.pop();
             node->right = st.top(); st.pop();
             st.push(node);
@@ -23,47 +34,87 @@ Node* constructTree(const string &prefix) {
     return st.top();
 }
 
-// Non-recursive post-order traversal
+// Non-recursive post-order traversal (helper function)
 void postOrderTraversal(Node* root) {
     if (!root) return;
+
     stack<Node*> s1, s2;
     s1.push(root);
+    vector<char> result;
+
     while (!s1.empty()) {
-        Node* node = s1.top(); s1.pop();
+        Node* node = s1.top();
+        s1.pop();
         s2.push(node);
+
         if (node->left) s1.push(node->left);
         if (node->right) s1.push(node->right);
     }
+
     while (!s2.empty()) {
-        cout << s2.top()->data << " ";
+        result.push_back(s2.top()->data);
         s2.pop();
+    }
+
+    for (char ch : result) {
+        cout << ch << " ";
     }
     cout << endl;
 }
 
-// Delete the tree with step-wise output
+// Function to delete the entire tree with step-wise output
 void deleteTree(Node* &root) {
     if (!root) return;
+
     stack<Node*> s;
     s.push(root);
+    vector<Node*> nodes;
+
     while (!s.empty()) {
-        Node* node = s.top(); s.pop();
-        cout << "Deleting node " << node->data << endl;
-        if (node->right) s.push(node->right);
-        if (node->left) s.push(node->left);
-        delete node;
-        cout << "Remaining: ";
-        postOrderTraversal(s.empty() ? nullptr : s.top());
+        nodes.push_back(s.top());
+        s.pop();
     }
+
+    // Deleting in post-order fashion
+    while (!nodes.empty()) {
+        Node* node = nodes.back();
+        nodes.pop_back();
+
+        cout << "Deleting node " << node->data << endl;
+
+        // Remove reference from the parent (if any)
+        for (auto& n : nodes) {
+            if (n->left == node) n->left = nullptr;
+            if (n->right == node) n->right = nullptr;
+        }
+
+        delete node;
+        
+        // Display remaining tree
+        cout << "Remaining: ";
+        if (nodes.empty()) {
+            cout << "None" << endl;
+        } else {
+            postOrderTraversal(nodes.front());
+        }
+    }
+
     root = nullptr;
 }
 
 int main() {
     string prefix = "+--a*bc/def";
+    
+    // Step 1: Construct expression tree
     Node* root = constructTree(prefix);
+    
+    // Step 2: Non-recursive Post-order traversal
     cout << "Post-order Traversal: ";
     postOrderTraversal(root);
     cout << endl;
+
+    // Step 3: Delete the tree with step-wise output
     deleteTree(root);
+
     return 0;
 }
